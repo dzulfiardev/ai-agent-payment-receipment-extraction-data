@@ -30,6 +30,24 @@ class GeminiReceiptService {
     });
   }
 
+  private getReceiptValidationPrompt(): string {
+    return `Analyze this image and determine if it is a payment receipt or invoice.
+
+    A valid receipt/invoice should contain:
+    - Store/business name
+    - Purchase items or services
+    - Prices or amounts
+    - Total amount
+    - Date (optional but preferred)
+
+    Respond with ONLY one of these exact responses:
+    - "VALID_RECEIPT" if this is clearly a payment receipt, invoice, or bill
+    - "NOT_RECEIPT" if this is not a receipt (photo, document, menu, etc.)
+    - "UNCLEAR_IMAGE" if the image is too blurry/unclear to determine
+
+    Be strict in your validation. Only respond with "VALID_RECEIPT" if you can clearly see it's a commercial transaction document.`;
+  }
+
   private getPrompt(): string {
     return `Please analyze this receipt image and extract the following information in a structured JSON format:
 
@@ -38,7 +56,9 @@ class GeminiReceiptService {
     - Store address (if visible)  
     - Store phone number (if visible)
     - Purchase date (if visible)
-    - List of items with name, quantity, unit price, and total price
+    - Currency used in the receipt
+    - Total number of items purchased (excluding discounts)
+    - List of items with name, quantity, unit price, and total price (including discounts as separate items)
     - Subtotal (if different from total)
     - Tax amount (if visible)
     - Total amount
@@ -49,6 +69,8 @@ class GeminiReceiptService {
       "address": "Store Address Here",
       "phone": "Phone Number Here", 
       "date": "YYYY-MM-DD",
+      "currency": "USD",
+      "totalItems": 0,
       "items": [
         {
           "name": "Item Name",
@@ -61,15 +83,138 @@ class GeminiReceiptService {
       "total": "0"
     }
 
+    ITEM EXTRACTION RULES:
+    1. Extract all purchased products/services as positive-priced items
+    2. Extract all discounts, coupons, or promotional reductions as separate items with NEGATIVE prices
+    3. For discounts, use descriptive names like:
+       - "Store Discount (10%)" 
+       - "Coupon: SAVE20"
+       - "Member Discount"
+       - "Promotional Discount"
+       - "Senior Discount"
+       - etc.
+    4. Discount items should have:
+       - quantity: "1" (unless specified otherwise)
+       - unitPrice: negative amount (e.g., "-5.00")
+       - price: negative amount (e.g., "-5.00")
+    5. Include the discount percentage or amount if visible on the receipt
+
+    TOTAL ITEMS COUNTING RULES:
+    1. First, look for "Total Items", "Item Count", "Qty", or similar text on the receipt
+    2. If explicitly shown on receipt, use that number for totalItems
+    3. If NOT shown on receipt, manually count by:
+       - Count ONLY purchased products/services (positive-priced items)
+       - Sum up the quantities of all non-discount items
+       - DO NOT count discount items in the total
+       - DO NOT count tax as an item
+    4. Examples:
+       - 2x Coffee + 1x Sandwich = totalItems: 3
+       - 1x Pizza + 1x Drink + Discount = totalItems: 2 (discount not counted)
+       - 3x Apples + 2x Bananas + Store Discount = totalItems: 5
+
+    CURRENCY DETECTION RULES:
+    1. First, look for explicit currency symbols or codes on the receipt (like $, €, £, ¥, USD, EUR, GBP, etc.)
+    2. If no currency is directly visible, analyze the store address and context to determine the likely currency:
+       - United States addresses → USD
+       - Canada addresses → CAD  
+       - European Union countries → EUR
+       - United Kingdom addresses → GBP
+       - Japan addresses → JPY
+       - Australia addresses → AUD
+       - And so on for other countries
+    3. Consider the language and format of the receipt text as additional clues
+    4. Use the ISO 4217 three-letter currency code format (e.g., USD, EUR, GBP, JPY)
+    5. If currency cannot be determined, default to "USD"
+
     Important notes:
-    - Use null for any field that cannot be clearly identified
-    - Ensure all prices are numbers (not strings)
+    - Use null for any field that cannot be clearly identified (except currency, use "USD" as fallback)
+    - Ensure all prices are numbers (not strings), including negative numbers for discounts
+    - totalItems should be a number representing count of purchased items (not discounts)
     - Date should be in YYYY-MM-DD format
-    - For items, "price" is the total price for that line item (quantity × unit price)
+    - For regular items, "price" is the total price for that line item (quantity × unit price)
+    - For discount items, "price" should be negative to represent the reduction
     - If unit price is not visible, you can calculate it or set it to the same as price for quantity 1
     - Be precise and only extract data that is clearly visible in the receipt
+    - Pay special attention to currency detection as it will be used for price formatting
+    - Discounts help provide a complete picture of the transaction
+    - totalItems helps with inventory and sales analytics
+
+    DISCOUNT EXAMPLES:
+    - If receipt shows "Item: $10.00" and "Discount: -$2.00", create two items:
+      1. {"name": "Item", "quantity": "1", "unitPrice": "10.00", "price": "10.00"}
+      2. {"name": "Discount", "quantity": "1", "unitPrice": "-2.00", "price": "-2.00"}
+    - If receipt shows "20% off entire purchase: -$5.50", create item:
+      {"name": "Store Discount (20%)", "quantity": "1", "unitPrice": "-5.50", "price": "-5.50"}
 
     Return only the JSON object, no additional text or formatting.`;
+  }
+
+  private async validateReceiptImage(file: File): Promise<{ isValid: boolean; reason?: string }> {
+    try {
+      if (!this.genAI) {
+        throw new Error('Gemini service not initialized');
+      }
+
+      // Convert file to base64
+      const base64Data = await this.fileToBase64(file);
+
+      // Prepare the image data
+      const imagePart = {
+        inlineData: {
+          data: base64Data,
+          mimeType: file.type
+        }
+      };
+
+      // Validate the image first
+      const validationResult = await this.genAI.models.generateContent({
+        model: 'gemini-2.0-flash-exp',
+        contents: [{
+          parts: [
+            { text: this.getReceiptValidationPrompt() },
+            imagePart
+          ]
+        }]
+      });
+
+      const validationText = validationResult.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+      if (!validationText) {
+        return {
+          isValid: false,
+          reason: 'Unable to analyze image. Please try with a clearer image.'
+        };
+      }
+
+      console.log('🔍 Receipt validation response:', validationText);
+
+      // Check validation result
+      if (validationText.includes('VALID_RECEIPT')) {
+        return { isValid: true };
+      } else if (validationText.includes('NOT_RECEIPT')) {
+        return {
+          isValid: false,
+          reason: 'This image does not appear to be a payment receipt. Please upload a receipt, invoice, or bill.'
+        };
+      } else if (validationText.includes('UNCLEAR_IMAGE')) {
+        return {
+          isValid: false,
+          reason: 'The image is too unclear to process. Please upload a clearer image of your receipt.'
+        };
+      } else {
+        return {
+          isValid: false,
+          reason: 'Unable to determine if this is a valid receipt. Please try with a clearer receipt image.'
+        };
+      }
+
+    } catch (error) {
+      console.error('Receipt validation error:', error);
+      return {
+        isValid: false,
+        reason: 'Failed to validate image. Please try again.'
+      };
+    }
   }
 
   async extractReceiptData(file: File): Promise<ApiResponse> {
@@ -78,6 +223,20 @@ class GeminiReceiptService {
         throw new Error('Gemini service not initialized. Please provide API key.');
       }
 
+      // Step 1: Validate that this is actually a receipt
+      console.log('🔍 Validating receipt image...');
+      const validation = await this.validateReceiptImage(file);
+
+      if (!validation.isValid) {
+        return {
+          success: false,
+          error: validation.reason || 'Invalid receipt image'
+        };
+      }
+
+      console.log('✅ Receipt validation passed. Proceeding with extraction...');
+
+      // Step 2: Extract receipt data
       // Convert file to base64
       const base64Data = await this.fileToBase64(file);
 
@@ -163,6 +322,8 @@ class GeminiReceiptService {
         tax: extractedData.tax || null,
         timestamp,
         fileName: file.name,
+        totalItems: extractedData.totalItems || null,
+        currency: extractedData.currency || 'USD',
 
         // Legacy fields for backward compatibility
         products: extractedData.items.map((item: any) => ({

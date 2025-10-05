@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ReceiptData } from "@/types/receipt";
 import { useAppDispatch } from "@/store/hooks";
 import { removeFromHistory } from "@/store/receiptSlice";
+import { formatCurrency } from "@/common/helpers";
 import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
 
 interface ExtractionDetailsDialogProps {
@@ -44,15 +45,10 @@ export default function ExtractionDetailsDialog({ isOpen, extraction, onClose, o
     };
   }, [isOpen, onClose]);
 
-  // Format currency helper function
-  const formatCurrency = (amount: number | string): string => {
-    const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
-    if (isNaN(numAmount)) return "N/A";
-
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(numAmount);
+  // Format currency using detected currency from receipt
+  const formatPrice = (amount: number | string): string => {
+    const currency = extraction?.currency || 'USD';
+    return formatCurrency(amount, currency);
   };
 
   // Calculate subtotal (sum of all item prices)
@@ -99,7 +95,7 @@ export default function ExtractionDetailsDialog({ isOpen, extraction, onClose, o
               </div>
               {extraction.total && (
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-white">{typeof extraction.total === "string" ? extraction.total : formatCurrency(extraction.total)}</p>
+                  <p className="text-2xl font-bold text-white">{typeof extraction.total === "string" ? extraction.total : formatPrice(extraction.total)}</p>
                   <p className="text-sm text-gray-400">Total</p>
                 </div>
               )}
@@ -142,11 +138,11 @@ export default function ExtractionDetailsDialog({ isOpen, extraction, onClose, o
                         <p className="text-white font-medium">{item.name}</p>
                         <div className="flex items-center gap-4 mt-1 text-sm text-gray-400">
                           <span>Qty: {item.quantity}</span>
-                          {item.unitPrice && <span>Unit: {typeof item.unitPrice === "string" ? item.unitPrice : formatCurrency(item.unitPrice)}</span>}
+                          {item.unitPrice && <span>Unit: {typeof item.unitPrice === "string" ? item.unitPrice : formatPrice(item.unitPrice)}</span>}
                         </div>
                       </div>
                       <div className="text-right ml-4">
-                        <p className="text-white font-medium">{typeof item.price === "string" ? item.price : formatCurrency(item.price)}</p>
+                        <p className="text-white font-medium">{typeof item.price === "string" ? item.price : formatPrice(item.price)}</p>
                       </div>
                     </div>
                   </div>
@@ -160,19 +156,19 @@ export default function ExtractionDetailsDialog({ isOpen, extraction, onClose, o
           {/* Summary Footer */}
           <div className="p-6 bg-gray-800/30 border-t border-gray-700/50 flex-shrink-0">
             <div className="space-y-2">
-              <div className="flex justify-between text-gray-400">
+              {/* <div className="flex justify-between text-gray-400">
                 <span>Subtotal ({extraction.items?.length || 0} items):</span>
-                <span>{formatCurrency(subtotal)}</span>
-              </div>
+                <span>{formatPrice(subtotal)}</span>
+              </div> */}
               {extraction.tax && (
                 <div className="flex justify-between text-gray-400">
                   <span>Tax:</span>
-                  <span>{typeof extraction.tax === "string" ? extraction.tax : formatCurrency(extraction.tax)}</span>
+                  <span>{typeof extraction.tax === "string" ? extraction.tax : formatPrice(extraction.tax)}</span>
                 </div>
               )}
               <div className="flex justify-between text-white font-semibold text-lg pt-2 border-t border-gray-700/50">
                 <span>Total:</span>
-                <span>{extraction.total ? (typeof extraction.total === "string" ? extraction.total : formatCurrency(extraction.total)) : formatCurrency(subtotal)}</span>
+                <span>{extraction.total ? (typeof extraction.total === "string" ? extraction.total : formatPrice(extraction.total)) : formatPrice(subtotal)}</span>
               </div>
             </div>
           </div>

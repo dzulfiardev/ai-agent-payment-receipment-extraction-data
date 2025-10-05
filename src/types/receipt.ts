@@ -12,6 +12,8 @@ export interface ReceiptData {
   address?: string;
   phone?: string;
   date?: string;
+  currency?: string;
+  totalItems?: number;
   items: ReceiptProduct[];
   total?: string;
   tax?: string;

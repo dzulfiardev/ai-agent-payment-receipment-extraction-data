@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import { ImagePreviewDialog, ExtractionHistory } from '@/components/ReceiptExtraction';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { extractReceiptData, clearCurrentExtraction } from '@/store/receiptSlice';
+import { formatCurrency as formatCurrencyHelper } from '@/common/helpers';
 
 export default function ReceiptExtractionPage() {
   const dispatch = useAppDispatch();
@@ -23,6 +24,12 @@ export default function ReceiptExtractionPage() {
   // Supported file types
   const supportedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
   const maxFileSize = 10 * 1024 * 1024; // 10MB
+
+  // Format price using detected currency
+  const formatPrice = (amount: number | string): string => {
+    const currency = currentExtraction?.currency || 'USD';
+    return formatCurrencyHelper(amount, currency);
+  };
 
   const validateFile = (file: File): boolean => {
     setFileError(null);
@@ -325,15 +332,13 @@ export default function ReceiptExtractionPage() {
                             <div className="flex justify-between">
                               <span className="text-gray-400">Total Amount:</span>
                               <span className="text-white font-medium text-lg">
-                                {/* {currentExtraction.total ? formatCurrency(currentExtraction.total) : 'N/A'} */}
-                                {currentExtraction.total ? currentExtraction.total : 'N/A'}
+                                {currentExtraction.total ? (typeof currentExtraction.total === 'string' ? currentExtraction.total : formatPrice(currentExtraction.total)) : 'N/A'}
                               </span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-400">Tax:</span>
                               <span className="text-white font-medium">
-                                {/* {currentExtraction.tax ? formatCurrency(currentExtraction.tax) : 'N/A'} */}
-                                {currentExtraction.tax ? currentExtraction.tax : 'N/A'}
+                                {currentExtraction.tax ? (typeof currentExtraction.tax === 'string' ? currentExtraction.tax : formatPrice(currentExtraction.tax)) : 'N/A'}
                               </span>
                             </div>
                           </div>
@@ -341,7 +346,7 @@ export default function ReceiptExtractionPage() {
 
                         {/* Items */}
                         <div className="space-y-4">
-                          <h4 className="text-white font-medium text-lg">Items ({currentExtraction.items?.length || 0})</h4>
+                          <h4 className="text-white font-medium text-lg">Items ({currentExtraction.totalItems || 0})</h4>
                           <div className="max-h-64 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                             {currentExtraction.items && currentExtraction.items.length > 0 ? (
                               currentExtraction.items.map((item: any, index: number) => (
@@ -352,12 +357,10 @@ export default function ReceiptExtractionPage() {
                                       <p className="text-gray-400 text-sm">Qty: {item.quantity}</p>
                                     </div>
                                     <div className="text-right ml-2">
-                                      {/* <p className="text-white font-medium">{formatCurrency(item.price)}</p> */}
-                                      <p className="text-white font-medium">{item.price}</p>
+                                      <p className="text-white font-medium">{typeof item.price === 'string' ? item.price : formatPrice(item.price)}</p>
                                       {item.unitPrice && (
                                         <p className="text-gray-400 text-sm">
-                                          {/* {formatCurrency(item.unitPrice)} each */}
-                                          {item.unitPrice} each
+                                          {typeof item.unitPrice === 'string' ? item.unitPrice : formatPrice(item.unitPrice)} each
                                         </p>
                                       )}
                                     </div>
@@ -421,7 +424,7 @@ export default function ReceiptExtractionPage() {
               </div>
 
               {/* Extraction History */}
-              <ExtractionHistory history={history} maxItems={5} />
+              <ExtractionHistory history={history} itemsPerPage={5} />
 
               {/* How it Works */}
               <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
