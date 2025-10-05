@@ -18,7 +18,7 @@ An AI-powered Next.js application that extracts structured data from receipt ima
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **State Management**: Redux Toolkit
-- **AI**: Google Gemini AI
+- **AI**: Google Gemini AI (@google/genai)
 - **File Processing**: Native File API
 
 ## Getting Started

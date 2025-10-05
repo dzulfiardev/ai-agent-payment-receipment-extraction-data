@@ -1,9 +1,9 @@
 // Receipt data types based on the requirements specification
 export interface ReceiptProduct {
   name: string;
-  price: number;
-  quantity: number;
-  unitPrice?: number;
+  price: string;
+  quantity: string;
+  unitPrice?: string;
 }
 
 export interface ReceiptData {
@@ -13,8 +13,8 @@ export interface ReceiptData {
   phone?: string;
   date?: string;
   items: ReceiptProduct[];
-  total?: number;
-  tax?: number;
+  total?: string;
+  tax?: string;
   timestamp: string;
   fileName: string;
   // Legacy fields for backward compatibility

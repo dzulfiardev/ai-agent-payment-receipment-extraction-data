@@ -1,9 +1,8 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import { ReceiptData, ApiResponse } from '@/types/receipt';
 
 class GeminiReceiptService {
-  private genAI: GoogleGenerativeAI | null = null;
-  private model: any = null;
+  private genAI: GoogleGenAI | null = null;
 
   constructor() {
     // Initialize will be called with API key
@@ -13,9 +12,8 @@ class GeminiReceiptService {
     if (!apiKey) {
       throw new Error('Gemini API key is required');
     }
-    
-    this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+    this.genAI = new GoogleGenAI({ apiKey });
   }
 
   private async fileToBase64(file: File): Promise<string> {
@@ -35,54 +33,54 @@ class GeminiReceiptService {
   private getPrompt(): string {
     return `Please analyze this receipt image and extract the following information in a structured JSON format:
 
-Extract these fields:
-- Store name (if visible)
-- Store address (if visible)  
-- Store phone number (if visible)
-- Purchase date (if visible)
-- List of items with name, quantity, unit price, and total price
-- Subtotal (if different from total)
-- Tax amount (if visible)
-- Total amount
+    Extract these fields:
+    - Store name (if visible)
+    - Store address (if visible)  
+    - Store phone number (if visible)
+    - Purchase date (if visible)
+    - List of items with name, quantity, unit price, and total price
+    - Subtotal (if different from total)
+    - Tax amount (if visible)
+    - Total amount
 
-Return the data in this exact JSON structure:
-{
-  "storeName": "Store Name Here",
-  "address": "Store Address Here",
-  "phone": "Phone Number Here", 
-  "date": "YYYY-MM-DD",
-  "items": [
+    Return the data in this exact JSON structure:
     {
-      "name": "Item Name",
-      "quantity": 1,
-      "unitPrice": 0.00,
-      "price": 0.00
+      "storeName": "Store Name Here",
+      "address": "Store Address Here",
+      "phone": "Phone Number Here", 
+      "date": "YYYY-MM-DD",
+      "items": [
+        {
+          "name": "Item Name",
+          "quantity": "1",
+          "unitPrice": "0",
+          "price": "0"
+        }
+      ],
+      "tax": "0",
+      "total": "0"
     }
-  ],
-  "tax": 0.00,
-  "total": 0.00
-}
 
-Important notes:
-- Use null for any field that cannot be clearly identified
-- Ensure all prices are numbers (not strings)
-- Date should be in YYYY-MM-DD format
-- For items, "price" is the total price for that line item (quantity × unit price)
-- If unit price is not visible, you can calculate it or set it to the same as price for quantity 1
-- Be precise and only extract data that is clearly visible in the receipt
+    Important notes:
+    - Use null for any field that cannot be clearly identified
+    - Ensure all prices are numbers (not strings)
+    - Date should be in YYYY-MM-DD format
+    - For items, "price" is the total price for that line item (quantity × unit price)
+    - If unit price is not visible, you can calculate it or set it to the same as price for quantity 1
+    - Be precise and only extract data that is clearly visible in the receipt
 
-Return only the JSON object, no additional text or formatting.`;
+    Return only the JSON object, no additional text or formatting.`;
   }
 
   async extractReceiptData(file: File): Promise<ApiResponse> {
     try {
-      if (!this.model) {
+      if (!this.genAI) {
         throw new Error('Gemini service not initialized. Please provide API key.');
       }
 
       // Convert file to base64
       const base64Data = await this.fileToBase64(file);
-      
+
       // Prepare the image data for Gemini
       const imagePart = {
         inlineData: {
@@ -94,14 +92,26 @@ Return only the JSON object, no additional text or formatting.`;
       // Get the prompt
       const prompt = this.getPrompt();
 
-      // Generate content
-      const result = await this.model.generateContent([prompt, imagePart]);
-      const response = await result.response;
-      let text = response.text();
+      // Generate content using the models API
+      const result = await this.genAI.models.generateContent({
+        model: 'gemini-2.0-flash-exp',
+        contents: [{
+          parts: [
+            { text: prompt },
+            imagePart
+          ]
+        }]
+      });
+
+      let text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!text) {
+        throw new Error('No text content received from AI response');
+      }
 
       // Clean up the response text
       text = text.trim();
-      
+
       // Remove any markdown code blocks if present
       if (text.startsWith('```json')) {
         text = text.replace(/```json\n?/, '').replace(/\n?```$/, '');
@@ -109,8 +119,9 @@ Return only the JSON object, no additional text or formatting.`;
         text = text.replace(/```\n?/, '').replace(/\n?```$/, '');
       }
 
+      console.log('Raw AI response text:', text);
       // Parse JSON response
-      let extractedData: any;
+      let extractedData: ReceiptData;
       try {
         extractedData = JSON.parse(text);
       } catch (parseError) {
@@ -119,6 +130,8 @@ Return only the JSON object, no additional text or formatting.`;
         throw new Error('Failed to parse AI response as JSON');
       }
 
+      console.log('Raw AI JSON parse:', extractedData);
+
       // Validate the extracted data structure
       if (!extractedData.items || !Array.isArray(extractedData.items)) {
         throw new Error('Invalid response format: missing items array');
@@ -126,19 +139,19 @@ Return only the JSON object, no additional text or formatting.`;
 
       // Validate each item
       for (const item of extractedData.items) {
-        if (typeof item.name !== 'string' || 
-            typeof item.price !== 'number' || 
-            typeof item.quantity !== 'number') {
+        if (typeof item.name !== 'string' ||
+          typeof item.price !== 'string' ||
+          typeof item.quantity !== 'string') {
           throw new Error('Invalid item format in response');
         }
       }
 
       // Generate unique ID and timestamp
-      const id = `receipt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const timestamp = new Date().toISOString();
+      const id: string = `receipt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const timestamp: string = new Date().toISOString();
 
       // Create the final receipt data with both new and legacy fields
-      const receiptData: ReceiptData = {
+      const receiptData = {
         // New format fields
         id,
         storeName: extractedData.storeName || null,
@@ -150,7 +163,7 @@ Return only the JSON object, no additional text or formatting.`;
         tax: extractedData.tax || null,
         timestamp,
         fileName: file.name,
-        
+
         // Legacy fields for backward compatibility
         products: extractedData.items.map((item: any) => ({
           name: item.name,
@@ -165,12 +178,12 @@ Return only the JSON object, no additional text or formatting.`;
 
       return {
         success: true,
-        data: receiptData
+        data: receiptData as ReceiptData
       };
 
     } catch (error) {
       console.error('Receipt extraction error:', error);
-      
+
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred during extraction'
@@ -182,12 +195,21 @@ Return only the JSON object, no additional text or formatting.`;
   async testApiKey(apiKey: string): Promise<boolean> {
     try {
       this.initialize(apiKey);
-      
+
       // Create a simple test request
-      const result = await this.model.generateContent(['Test connection. Respond with "OK"']);
-      const response = await result.response;
-      const text = response.text();
-      
+      const result = await this.genAI!.models.generateContent({
+        model: 'gemini-2.0-flash-exp',
+        contents: [{
+          parts: [{ text: 'Test connection. Respond with "OK"' }]
+        }]
+      });
+
+      const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!text) {
+        return false;
+      }
+
       return text.includes('OK') || text.length > 0;
     } catch (error) {
       console.error('API key test failed:', error);

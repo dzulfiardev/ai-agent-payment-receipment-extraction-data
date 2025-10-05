@@ -53,6 +53,7 @@ export const extractReceiptData = createAsyncThunk(
       
       // Extract data using Gemini API
       const result = await geminiService.extractReceiptData(file);
+      console.log("extract data result:", result)
       
       dispatch(updateProgress(75));
       
@@ -164,6 +165,7 @@ const receiptSlice = createSlice({
         state.isProcessing = false;
         state.data = action.payload;
         state.currentExtraction = action.payload;
+     
         state.error = null;
         state.progress = 100;
         

@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { ImagePreviewDialog, ExtractionHistory } from '@/components/ReceiptExtraction';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { extractReceiptData, clearCurrentExtraction } from '@/store/receiptSlice';
 
@@ -16,6 +17,7 @@ export default function ReceiptExtractionPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Supported file types
@@ -99,6 +101,7 @@ export default function ReceiptExtractionPage() {
     setSelectedFile(null);
     setFilePreview(null);
     setFileError(null);
+    setIsImageDialogOpen(false); // Close dialog when file is removed
     dispatch(clearCurrentExtraction());
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -231,7 +234,9 @@ export default function ReceiptExtractionPage() {
                             <img
                               src={filePreview}
                               alt="File preview"
-                              className="w-16 h-16 object-cover rounded-lg border border-gray-600"
+                              className="w-16 h-16 cursor-zoom-in object-cover rounded-lg border border-gray-600 hover:border-blue-400 transition-all duration-200 hover:scale-105"
+                              onClick={() => setIsImageDialogOpen(true)}
+                              title="Click to view full size"
                             />
                           ) : (
                             <div className="w-16 h-16 bg-red-500/20 rounded-lg flex items-center justify-center">
@@ -254,7 +259,7 @@ export default function ReceiptExtractionPage() {
                         <button 
                           onClick={handleExtractData}
                           disabled={isLoading}
-                          className={`px-12 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 transform inline-flex items-center gap-3 ${
+                          className={`px-12 py-4 rounded-2xl cursor-pointer font-semibold text-lg transition-all duration-300 transform inline-flex items-center gap-3 ${
                             isLoading
                               ? 'bg-gray-600 cursor-not-allowed'
                               : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:scale-105 hover:shadow-lg hover:shadow-green-500/25'
@@ -320,13 +325,15 @@ export default function ReceiptExtractionPage() {
                             <div className="flex justify-between">
                               <span className="text-gray-400">Total Amount:</span>
                               <span className="text-white font-medium text-lg">
-                                {currentExtraction.total ? formatCurrency(currentExtraction.total) : 'N/A'}
+                                {/* {currentExtraction.total ? formatCurrency(currentExtraction.total) : 'N/A'} */}
+                                {currentExtraction.total ? currentExtraction.total : 'N/A'}
                               </span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-400">Tax:</span>
                               <span className="text-white font-medium">
-                                {currentExtraction.tax ? formatCurrency(currentExtraction.tax) : 'N/A'}
+                                {/* {currentExtraction.tax ? formatCurrency(currentExtraction.tax) : 'N/A'} */}
+                                {currentExtraction.tax ? currentExtraction.tax : 'N/A'}
                               </span>
                             </div>
                           </div>
@@ -335,7 +342,7 @@ export default function ReceiptExtractionPage() {
                         {/* Items */}
                         <div className="space-y-4">
                           <h4 className="text-white font-medium text-lg">Items ({currentExtraction.items?.length || 0})</h4>
-                          <div className="max-h-64 overflow-y-auto space-y-2">
+                          <div className="max-h-64 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                             {currentExtraction.items && currentExtraction.items.length > 0 ? (
                               currentExtraction.items.map((item: any, index: number) => (
                                 <div key={index} className="bg-gray-700/30 rounded-lg p-3">
@@ -345,10 +352,12 @@ export default function ReceiptExtractionPage() {
                                       <p className="text-gray-400 text-sm">Qty: {item.quantity}</p>
                                     </div>
                                     <div className="text-right ml-2">
-                                      <p className="text-white font-medium">{formatCurrency(item.price)}</p>
+                                      {/* <p className="text-white font-medium">{formatCurrency(item.price)}</p> */}
+                                      <p className="text-white font-medium">{item.price}</p>
                                       {item.unitPrice && (
                                         <p className="text-gray-400 text-sm">
-                                          {formatCurrency(item.unitPrice)} each
+                                          {/* {formatCurrency(item.unitPrice)} each */}
+                                          {item.unitPrice} each
                                         </p>
                                       )}
                                     </div>
@@ -412,32 +421,7 @@ export default function ReceiptExtractionPage() {
               </div>
 
               {/* Extraction History */}
-              {history.length > 0 && (
-                <div className="mt-12 bg-gray-900/50 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-2xl overflow-hidden">
-                  <div className="p-8 md:p-12">
-                    <h3 className="text-white text-xl font-semibold mb-6">Recent Extractions</h3>
-                    <div className="space-y-4">
-                      {history.slice(0, 5).map((extraction, index) => (
-                        <div key={extraction.id} className="bg-gray-800/30 rounded-xl p-4 border border-gray-700/30">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="text-white font-medium">{extraction.storeName || 'Unknown Store'}</p>
-                              <p className="text-gray-400 text-sm">
-                                {new Date(extraction.timestamp).toLocaleDateString()} • {extraction.items?.length || 0} items
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-white font-medium">
-                                {extraction.total ? formatCurrency(extraction.total) : 'N/A'}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
+              <ExtractionHistory history={history} maxItems={5} />
 
               {/* How it Works */}
               <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -466,6 +450,16 @@ export default function ReceiptExtractionPage() {
             </div>
           </div>
         </div>
+
+        {/* Image Preview Dialog */}
+        <ImagePreviewDialog
+          isOpen={isImageDialogOpen}
+          imageUrl={filePreview}
+          fileName={selectedFile?.name}
+          fileSize={selectedFile?.size}
+          fileType={selectedFile?.type}
+          onClose={() => setIsImageDialogOpen(false)}
+        />
       </main>
       <Footer />
     </div>
