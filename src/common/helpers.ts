@@ -62,14 +62,14 @@ const CURRENCY_LOCALE_MAP: { [key: string]: string } = {
  */
 export const formatCurrency = (amount: number | string, currencyCode: string = 'USD'): string => {
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-  
+
   if (isNaN(numAmount)) {
     return 'N/A';
   }
 
   // Get the appropriate locale for the currency
   const locale = CURRENCY_LOCALE_MAP[currencyCode.toUpperCase()] || 'en-US';
-  
+
   try {
     return new Intl.NumberFormat(locale, {
       style: 'currency',
@@ -96,7 +96,7 @@ export const formatCurrency = (amount: number | string, currencyCode: string = '
  */
 export const getCurrencySymbol = (currencyCode: string = 'USD'): string => {
   const locale = CURRENCY_LOCALE_MAP[currencyCode.toUpperCase()] || 'en-US';
-  
+
   try {
     const formatter = new Intl.NumberFormat(locale, {
       style: 'currency',
@@ -104,7 +104,7 @@ export const getCurrencySymbol = (currencyCode: string = 'USD'): string => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     });
-    
+
     // Extract symbol by formatting 0 and removing the number
     const formatted = formatter.format(0);
     return formatted.replace(/[0-9.,\s]/g, '');
@@ -138,16 +138,16 @@ export const isValidCurrencyCode = (currencyCode: string): boolean => {
  */
 export const detectCurrencyFromLocation = (address?: string, language?: string): string => {
   if (!address && !language) return 'USD';
-  
+
   const addressLower = address?.toLowerCase() || '';
   const langLower = language?.toLowerCase() || '';
-  
+
   // Country/region patterns
   const patterns = [
     // North America
     { pattern: /(usa|united states|america|us\s|u\.s\.|canada|ca\s)/i, currency: 'USD' },
     { pattern: /(canada|canadian|ca\s)/i, currency: 'CAD' },
-    
+
     // Europe
     { pattern: /(germany|deutschland|de\s|berlin|munich|hamburg)/i, currency: 'EUR' },
     { pattern: /(france|french|fr\s|paris|lyon|marseille)/i, currency: 'EUR' },
@@ -156,7 +156,7 @@ export const detectCurrencyFromLocation = (address?: string, language?: string):
     { pattern: /(netherlands|holland|nl\s|amsterdam)/i, currency: 'EUR' },
     { pattern: /(uk|united kingdom|britain|gb\s|london|manchester)/i, currency: 'GBP' },
     { pattern: /(switzerland|swiss|ch\s|zurich|geneva)/i, currency: 'CHF' },
-    
+
     // Asia
     { pattern: /(japan|japanese|jp\s|tokyo|osaka|kyoto)/i, currency: 'JPY' },
     { pattern: /(china|chinese|cn\s|beijing|shanghai|guangzhou)/i, currency: 'CNY' },
@@ -169,31 +169,31 @@ export const detectCurrencyFromLocation = (address?: string, language?: string):
     { pattern: /(indonesia|indonesian|id\s|jakarta)/i, currency: 'IDR' },
     { pattern: /(malaysia|malaysian|my\s|kuala lumpur)/i, currency: 'MYR' },
     { pattern: /(philippines|filipino|ph\s|manila)/i, currency: 'PHP' },
-    
+
     // Oceania
     { pattern: /(australia|australian|au\s|sydney|melbourne)/i, currency: 'AUD' },
     { pattern: /(new zealand|nz\s|auckland)/i, currency: 'NZD' },
-    
+
     // Middle East & Africa
     { pattern: /(uae|emirates|dubai|abu dhabi)/i, currency: 'AED' },
     { pattern: /(saudi|arabia|riyadh|jeddah)/i, currency: 'SAR' },
     { pattern: /(israel|israeli|il\s|tel aviv|jerusalem)/i, currency: 'ILS' },
     { pattern: /(south africa|za\s|johannesburg|cape town)/i, currency: 'ZAR' },
     { pattern: /(egypt|egyptian|eg\s|cairo)/i, currency: 'EGP' },
-    
+
     // Americas
     { pattern: /(mexico|mexican|mx\s|mexico city)/i, currency: 'MXN' },
     { pattern: /(brazil|brazilian|br\s|sao paulo|rio)/i, currency: 'BRL' },
   ];
-  
+
   const searchText = `${addressLower} ${langLower}`;
-  
+
   for (const { pattern, currency } of patterns) {
     if (pattern.test(searchText)) {
       return currency;
     }
   }
-  
+
   // Default fallback
   return 'USD';
 };

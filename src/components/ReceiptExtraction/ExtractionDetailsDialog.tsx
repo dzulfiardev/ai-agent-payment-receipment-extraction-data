@@ -84,7 +84,7 @@ export default function ExtractionDetailsDialog({ isOpen, extraction, onClose, o
                 <div className="flex items-center gap-3 mt-2 text-sm text-gray-400">
                   <span>{new Date(extraction.timestamp).toLocaleDateString()}</span>
                   <span>•</span>
-                  <span>{extraction.items?.length || 0} items</span>
+                  <span>{extraction.totalItems || 0} items</span>
                   {extraction.fileName && (
                     <>
                       <span>•</span>
@@ -95,7 +95,8 @@ export default function ExtractionDetailsDialog({ isOpen, extraction, onClose, o
               </div>
               {extraction.total && (
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-white">{typeof extraction.total === "string" ? extraction.total : formatPrice(extraction.total)}</p>
+                  {/* <p className="text-2xl font-bold text-white">{typeof extraction.total === "string" ? extraction.total : formatPrice(extraction.total)}</p> */}
+                  <p className="text-2xl font-bold text-white">{formatPrice(extraction.total)}</p>
                   <p className="text-sm text-gray-400">Total</p>
                 </div>
               )}
@@ -138,11 +139,12 @@ export default function ExtractionDetailsDialog({ isOpen, extraction, onClose, o
                         <p className="text-white font-medium">{item.name}</p>
                         <div className="flex items-center gap-4 mt-1 text-sm text-gray-400">
                           <span>Qty: {item.quantity}</span>
-                          {item.unitPrice && <span>Unit: {typeof item.unitPrice === "string" ? item.unitPrice : formatPrice(item.unitPrice)}</span>}
+                          {/* {item.unitPrice && <span>Unit: {typeof item.unitPrice === "string" ? item.unitPrice : formatPrice(item.unitPrice)}</span>} */}
+                          {item.unitPrice && <span>Unit: {formatPrice(item.unitPrice)}</span>}
                         </div>
                       </div>
                       <div className="text-right ml-4">
-                        <p className="text-white font-medium">{typeof item.price === "string" ? item.price : formatPrice(item.price)}</p>
+                        <p className="text-white font-medium">{formatPrice(item.price)}</p>
                       </div>
                     </div>
                   </div>
@@ -163,12 +165,14 @@ export default function ExtractionDetailsDialog({ isOpen, extraction, onClose, o
               {extraction.tax && (
                 <div className="flex justify-between text-gray-400">
                   <span>Tax:</span>
-                  <span>{typeof extraction.tax === "string" ? extraction.tax : formatPrice(extraction.tax)}</span>
+                  {/* <span>{typeof extraction.tax === "string" ? extraction.tax : formatPrice(extraction.tax)}</span> */}
+                  <span>{formatPrice(extraction.tax)}</span>
                 </div>
               )}
               <div className="flex justify-between text-white font-semibold text-lg pt-2 border-t border-gray-700/50">
                 <span>Total:</span>
-                <span>{extraction.total ? (typeof extraction.total === "string" ? extraction.total : formatPrice(extraction.total)) : formatPrice(subtotal)}</span>
+                {/* <span>{extraction.total ? (typeof extraction.total === "string" ? extraction.total : formatPrice(extraction.total)) : formatPrice(subtotal)}</span> */}
+                <span>{extraction.total ? formatPrice(extraction.total) : formatPrice(subtotal)}</span>
               </div>
             </div>
           </div>

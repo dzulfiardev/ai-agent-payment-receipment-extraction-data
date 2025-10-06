@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ReceiptData } from "@/types/receipt";
+import { formatCurrency } from "@/common/helpers";
 import ExtractionDetailsDialog from "./ExtractionDetailsDialog";
 
 interface ExtractionHistoryProps {
@@ -55,15 +56,15 @@ export default function ExtractionHistory({ history, itemsPerPage = 5 }: Extract
     setSelectedExtraction(null);
   };
   // Format currency helper function
-  const formatCurrency = (amount: number | string): string => {
-    const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
-    if (isNaN(numAmount)) return "N/A";
+  // const formatCurrency = (amount: number | string): string => {
+  //   const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+  //   if (isNaN(numAmount)) return "N/A";
 
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(numAmount);
-  };
+  //   return new Intl.NumberFormat("en-US", {
+  //     style: "currency",
+  //     currency: "USD",
+  //   }).format(numAmount);
+  // };
 
   // Don't render if no history
   if (!history || history.length === 0) {
@@ -102,7 +103,7 @@ export default function ExtractionHistory({ history, itemsPerPage = 5 }: Extract
                       <p className="text-gray-400 text-sm">{new Date(extraction.timestamp).toLocaleDateString()}</p>
                       <span className="text-gray-500">•</span>
                       <p className="text-gray-400 text-sm">
-                        {extraction.items?.length || 0} item{(extraction.items?.length || 0) !== 1 ? "s" : ""}
+                        {extraction.totalItems || 0} item{(extraction.totalItems || 0) !== 1 ? "s" : ""}
                       </p>
                       {extraction.fileName && (
                         <>
@@ -114,8 +115,9 @@ export default function ExtractionHistory({ history, itemsPerPage = 5 }: Extract
                   </div>
 
                   <div className="text-right ml-4 flex-shrink-0">
-                    <p className="text-white font-medium">{extraction.total ? (typeof extraction.total === "string" ? extraction.total : formatCurrency(extraction.total)) : "N/A"}</p>
-                    {extraction.tax && <p className="text-gray-400 text-sm">Tax: {typeof extraction.tax === "string" ? extraction.tax : formatCurrency(extraction.tax)}</p>}
+                    {/* <p className="text-white font-medium">{extraction.total ? (typeof extraction.total === "string" ? extraction.total : formatCurrency(extraction.total)) : "N/A"}</p> */}
+                    <p className="text-white font-medium">{extraction.total ? formatCurrency(extraction.total, extraction.currency) : "N/A"}</p>
+                    {extraction.tax && <p className="text-gray-400 text-sm">Tax: {extraction.tax ? formatCurrency(extraction.tax, extraction.currency): "N/A"}</p>}
                     <div className="flex items-center justify-end mt-1 text-xs text-gray-500 group-hover:text-blue-400 transition-colors">
                       <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />

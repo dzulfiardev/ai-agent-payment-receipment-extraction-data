@@ -3,6 +3,8 @@ import { ReceiptData, ApiResponse } from '@/types/receipt';
 
 class GeminiReceiptService {
   private genAI: GoogleGenAI | null = null;
+  // private aiModel: string = 'gemini-2.5-flash-lite';
+  private aiModel: string = 'gemini-2.0-flash';
 
   constructor() {
     // Initialize will be called with API key
@@ -58,6 +60,7 @@ class GeminiReceiptService {
     - Purchase date (if visible)
     - Currency used in the receipt
     - Total number of items purchased (excluding discounts)
+    - Total discount amount (sum of all discounts applied)
     - List of items with name, quantity, unit price, and total price (including discounts as separate items)
     - Subtotal (if different from total)
     - Tax amount (if visible)
@@ -69,8 +72,9 @@ class GeminiReceiptService {
       "address": "Store Address Here",
       "phone": "Phone Number Here", 
       "date": "YYYY-MM-DD",
-      "currency": "USD",
+      "currency": "",
       "totalItems": 0,
+      "totalDiscount": "0",
       "items": [
         {
           "name": "Item Name",
@@ -99,6 +103,11 @@ class GeminiReceiptService {
        - price: negative amount (e.g., "-5.00")
     5. Include the discount percentage or amount if visible on the receipt
 
+    UNIT PRICE, TAX, TOTAL RULES:
+    1. Check in some thousand condition it using coma (,) or dot (.) and have max tree digit each spearator, carefully don't think cent  
+    2. If detected thousand, remove thousand separator example 300.500 or 300,500 total price, unit price & tax format must be 300500
+    3. Detect cent ussualy have max two digit after dot separator such as 1000.13 or 1000,13 the 13 is cent, keep it  
+
     TOTAL ITEMS COUNTING RULES:
     1. First, look for "Total Items", "Item Count", "Qty", or similar text on the receipt
     2. If explicitly shown on receipt, use that number for totalItems
@@ -111,6 +120,25 @@ class GeminiReceiptService {
        - 2x Coffee + 1x Sandwich = totalItems: 3
        - 1x Pizza + 1x Drink + Discount = totalItems: 2 (discount not counted)
        - 3x Apples + 2x Bananas + Store Discount = totalItems: 5
+
+    TOTAL DISCOUNT CALCULATION RULES:
+    1. First, look for "Total Discount", "Total Savings", "You Saved", or similar text on the receipt
+    2. If explicitly shown on receipt, use that amount for totalDiscount
+    3. If NOT shown on receipt, manually calculate by:
+       - Sum up ALL negative-priced items (discount items)
+       - Include all types of discounts: store discounts, coupons, member discounts, promotional discounts
+       - Convert to positive number for totalDiscount (e.g., if discounts total -$5.50, set totalDiscount to "5.50")
+       - If no discounts exist, set totalDiscount to "0"
+    4. Examples:
+       - Item: $10.00, Store Discount: -$2.00, Coupon: -$1.50 = totalDiscount: "3.50"
+       - Item: $15.00, Member Discount (10%): -$1.50 = totalDiscount: "1.50"
+       - No discounts = totalDiscount: "0"
+    5. Common discount patterns to look for:
+       - "Discount: -$X.XX"
+       - "You saved: $X.XX"
+       - "Coupon discount: -$X.XX"
+       - "10% off: -$X.XX"
+       - "Promotion: -$X.XX"
 
     CURRENCY DETECTION RULES:
     1. First, look for explicit currency symbols or codes on the receipt (like $, €, £, ¥, USD, EUR, GBP, etc.)
@@ -127,9 +155,11 @@ class GeminiReceiptService {
     5. If currency cannot be determined, default to "USD"
 
     Important notes:
+    - Checking language first you must know the discount word in that language, tax word in that language, total word in that language, etc
     - Use null for any field that cannot be clearly identified (except currency, use "USD" as fallback)
     - Ensure all prices are numbers (not strings), including negative numbers for discounts
     - totalItems should be a number representing count of purchased items (not discounts)
+    - totalDiscount should be a positive string representing total discount amount (e.g., "5.50" not "-5.50")
     - Date should be in YYYY-MM-DD format
     - For regular items, "price" is the total price for that line item (quantity × unit price)
     - For discount items, "price" should be negative to represent the reduction
@@ -138,6 +168,7 @@ class GeminiReceiptService {
     - Pay special attention to currency detection as it will be used for price formatting
     - Discounts help provide a complete picture of the transaction
     - totalItems helps with inventory and sales analytics
+    - totalDiscount helps track savings and promotional effectiveness
 
     DISCOUNT EXAMPLES:
     - If receipt shows "Item: $10.00" and "Discount: -$2.00", create two items:
@@ -168,7 +199,7 @@ class GeminiReceiptService {
 
       // Validate the image first
       const validationResult = await this.genAI.models.generateContent({
-        model: 'gemini-2.0-flash-exp',
+        model: this.aiModel,
         contents: [{
           parts: [
             { text: this.getReceiptValidationPrompt() },
@@ -253,7 +284,7 @@ class GeminiReceiptService {
 
       // Generate content using the models API
       const result = await this.genAI.models.generateContent({
-        model: 'gemini-2.0-flash-exp',
+        model: this.aiModel,
         contents: [{
           parts: [
             { text: prompt },
