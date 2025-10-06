@@ -73,18 +73,18 @@ class GeminiReceiptService {
       "phone": "Phone Number Here", 
       "date": "YYYY-MM-DD",
       "currency": "",
-      "totalItems": 0,
-      "totalDiscount": "0",
+      "totalItems": 1,
+      "totalDiscount": "5000",
       "items": [
         {
           "name": "Item Name",
-          "quantity": "1",
-          "unitPrice": "0",
-          "price": "0"
+          "quantity": "2",
+          "unitPrice": "30000",
+          "price": "60000"
         }
       ],
-      "tax": "0",
-      "total": "0"
+      "tax": "6000",
+      "total": "55000"
     }
 
     ITEM EXTRACTION RULES:
@@ -103,10 +103,9 @@ class GeminiReceiptService {
        - price: negative amount (e.g., "-5.00")
     5. Include the discount percentage or amount if visible on the receipt
 
-    UNIT PRICE, TAX, TOTAL RULES:
-    1. Check in some thousand condition it using coma (,) or dot (.) and have max tree digit each spearator, carefully don't think cent  
-    2. If detected thousand, remove thousand separator example 300.500 or 300,500 total price, unit price & tax format must be 300500
-    3. Detect cent ussualy have max two digit after dot separator such as 1000.13 or 1000,13 the 13 is cent, keep it  
+    UNIT PRICE, PRICE, TAX, TOTAL FORMAT NUMBER RULES:
+    1. If detected thousand number and have separator by coma (,) or dot (.), remove thousand separator coma (,) or dot (.) on total price, unit price, item discount & tax format example 300.500 or 300,500 become 300500
+    2. Detect cent ussualy have max two digit after dot (.) or coma (,) separator for example 1000,13 or 1000.13 the 13 is cent, keep it  
 
     TOTAL ITEMS COUNTING RULES:
     1. First, look for "Total Items", "Item Count", "Qty", or similar text on the receipt
@@ -363,6 +362,7 @@ class GeminiReceiptService {
           quantity: item.quantity,
           total: item.price, // For legacy compatibility
         })),
+        totalDiscount: extractedData.totalDiscount || '0',
         total_spending: extractedData.total || 0,
         extraction_date: timestamp,
         file_name: file.name
