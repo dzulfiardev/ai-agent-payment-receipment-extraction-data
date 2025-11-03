@@ -50,7 +50,7 @@ class GeminiReceiptService {
     Be strict in your validation. Only respond with "VALID_RECEIPT" if you can clearly see it's a commercial transaction document.`;
   }
 
-  private getPrompt(): string {
+  private getPrompt(country: string): string {
     return `Please analyze this receipt image and extract the following information in a structured JSON format:
 
     Extract these fields:
@@ -140,18 +140,8 @@ class GeminiReceiptService {
        - "Promotion: -$X.XX"
 
     CURRENCY DETECTION RULES:
-    1. First, look for explicit currency symbols or codes on the receipt (like $, €, £, ¥, USD, EUR, GBP, etc.)
-    2. If no currency is directly visible, analyze the store address and context to determine the likely currency:
-       - United States addresses → USD
-       - Canada addresses → CAD  
-       - European Union countries → EUR
-       - United Kingdom addresses → GBP
-       - Japan addresses → JPY
-       - Australia addresses → AUD
-       - And so on for other countries
-    3. Consider the language and format of the receipt text as additional clues
-    4. Use the ISO 4217 three-letter currency code format (e.g., USD, EUR, GBP, JPY)
-    5. If currency cannot be determined, default to "USD"
+    1. The country provided is "${country}"
+    2. Use this country to help infer the currency if not explicitly showns
 
     Important notes:
     - Checking language first you must know the discount word in that language, tax word in that language, total word in that language, etc
@@ -247,7 +237,7 @@ class GeminiReceiptService {
     }
   }
 
-  async extractReceiptData(file: File): Promise<ApiResponse> {
+  async extractReceiptData(file: File, country: string): Promise<ApiResponse> {
     try {
       if (!this.genAI) {
         throw new Error('Gemini service not initialized. Please provide API key.');
@@ -279,7 +269,7 @@ class GeminiReceiptService {
       };
 
       // Get the prompt
-      const prompt = this.getPrompt();
+      const prompt = this.getPrompt(country);
 
       // Generate content using the models API
       const result = await this.genAI.models.generateContent({

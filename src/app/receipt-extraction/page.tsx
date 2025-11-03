@@ -7,6 +7,8 @@ import { ImagePreviewDialog, ExtractionHistory } from "@/components/ReceiptExtra
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { extractReceiptData, clearCurrentExtraction } from "@/store/receiptSlice";
 import { formatCurrency as formatCurrencyHelper } from "@/common/helpers";
+import SelectAutoCompleteCustom from "@/components/ReceiptExtraction/SelectAutoCompleteCustom";
+import { countries } from "@/services/optionsData";
 
 export default function ReceiptExtractionPage() {
   const dispatch = useAppDispatch();
@@ -17,6 +19,7 @@ export default function ReceiptExtractionPage() {
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
+  const [country, setCountry] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Supported file types
@@ -124,8 +127,13 @@ export default function ReceiptExtractionPage() {
       return;
     }
 
+    if (!country || country.trim() === "") {
+      alert("Please select your country before proceeding");
+      return;
+    }
+
     try {
-      await dispatch(extractReceiptData({ file: selectedFile, apiKey })).unwrap();
+      await dispatch(extractReceiptData({ file: selectedFile, apiKey, country: country })).unwrap();
     } catch (error) {
       console.error("Extraction failed:", error);
     }
@@ -164,7 +172,7 @@ export default function ReceiptExtractionPage() {
 
             {/* Main Upload Area */}
             <div className="max-w-4xl mx-auto">
-              <div className="bg-gray-900/50 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-2xl overflow-hidden">
+              <div className="relative z-50 bg-gray-900/50 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-2xl">
                 <div className="p-8 md:p-12">
                   {/* Hidden File Input */}
                   <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={handleFileInputChange} className="hidden" />
@@ -172,9 +180,8 @@ export default function ReceiptExtractionPage() {
                   {!selectedFile ? (
                     /* Upload Zone */
                     <div
-                      className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 cursor-pointer ${
-                        isDragging ? "border-blue-400 bg-blue-500/10" : "border-gray-600 hover:border-blue-500 hover:bg-blue-500/5"
-                      } group`}
+                      className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 cursor-pointer ${isDragging ? "border-blue-400 bg-blue-500/10" : "border-gray-600 hover:border-blue-500 hover:bg-blue-500/5"
+                        } group`}
                       onDragEnter={handleDragEnter}
                       onDragLeave={handleDragLeave}
                       onDragOver={handleDragOver}
@@ -182,9 +189,8 @@ export default function ReceiptExtractionPage() {
                       onClick={handleBrowseClick}>
                       <div className="mb-6">
                         <div
-                          className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-all duration-300 ${
-                            isDragging ? "bg-blue-500/30" : "bg-gray-800 group-hover:bg-blue-500/20"
-                          }`}>
+                          className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-all duration-300 ${isDragging ? "bg-blue-500/30" : "bg-gray-800 group-hover:bg-blue-500/20"
+                            }`}>
                           <svg
                             className={`w-10 h-10 transition-colors duration-300 ${isDragging ? "text-blue-400" : "text-gray-400 group-hover:text-blue-400"}`}
                             fill="none"
@@ -246,16 +252,30 @@ export default function ReceiptExtractionPage() {
                         </div>
                       </div>
 
+                      {filePreview && (
+                        <div className="w-full px-10">
+                          <SelectAutoCompleteCustom
+                            label="Select Your Country"
+                            labelSearch="Choose Country"
+                            options={countries}
+                            value={country}
+                            onChange={setCountry}
+                          />
+                          <small className="text-gray-400 text-xs">
+                            Country may help to define the currency.
+                          </small>
+                        </div>
+                      )}
+
                       {/* Process Button */}
                       <div className="text-center">
                         <button
                           onClick={handleExtractData}
                           disabled={isLoading}
-                          className={`px-12 py-4 rounded-2xl cursor-pointer font-semibold text-lg transition-all duration-300 transform inline-flex items-center gap-3 ${
-                            isLoading
-                              ? "bg-gray-600 cursor-not-allowed"
-                              : "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:scale-105 hover:shadow-lg hover:shadow-green-500/25"
-                          } text-white`}>
+                          className={`px-12 py-4 rounded-2xl cursor-pointer font-semibold text-lg transition-all duration-300 transform inline-flex items-center gap-3 ${isLoading
+                            ? "bg-gray-600 cursor-not-allowed"
+                            : "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:scale-105 hover:shadow-lg hover:shadow-green-500/25"
+                            } text-white`}>
                           {isLoading ? (
                             <>
                               <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">

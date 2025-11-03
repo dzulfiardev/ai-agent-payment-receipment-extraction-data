@@ -6,6 +6,11 @@ import { useAppDispatch } from "@/store/hooks";
 import { removeFromHistory } from "@/store/receiptSlice";
 import { formatCurrency } from "@/common/helpers";
 import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 interface ExtractionDetailsDialogProps {
   isOpen: boolean;
@@ -17,6 +22,7 @@ interface ExtractionDetailsDialogProps {
 export default function ExtractionDetailsDialog({ isOpen, extraction, onClose, onDelete }: ExtractionDetailsDialogProps) {
   const dispatch = useAppDispatch();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   const handleDelete = () => {
     if (extraction?.fileName) {
@@ -67,15 +73,16 @@ export default function ExtractionDetailsDialog({ isOpen, extraction, onClose, o
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose} style={{ zIndex: 9999 }}>
       <div className="relative max-w-2xl max-h-[90vh] w-full mx-auto my-8">
-        {/* Close Button */}
-        <button onClick={onClose} className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors z-10" title="Close (ESC)">
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
 
         {/* Dialog Content */}
         <div className="bg-gray-900/95 rounded-2xl border border-gray-700/50 shadow-2xl overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+          <div className="flex justify-end w-full items-center px-3 py-2">
+            <button onClick={onClose}>
+              <svg className="w-6 h-6 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
           {/* Header */}
           <div className="p-6 bg-gray-800/50 border-b border-gray-700/50">
             <div className="flex items-start justify-between">
@@ -177,29 +184,38 @@ export default function ExtractionDetailsDialog({ isOpen, extraction, onClose, o
             </div>
           </div>
 
-          {/* Delete Button Wrapper */}
-          <div className="p-6 bg-gray-800/30 border-t border-gray-700/50 flex-shrink-0">
-            <div className="flex justify-end">
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="px-4 py-2 bg-red-700 cursor-pointer hover:bg-red-600 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
-              >
-                {/* Trash MDI Icon */}
+          <div className="relative flex justify-end p-6 bg-gray-800/30 border-t border-gray-700/50 flex-shrink-0">
+            <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+              <PopoverTrigger className="px-4 py-2 bg-red-700 cursor-pointer hover:bg-red-600 text-white rounded-lg transition-colors font-medium flex items-center gap-2">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
                 </svg>
                 Delete
-              </button>
-            </div>
+              </PopoverTrigger>
+
+              <PopoverContent className="right-0 z-[9999] bottom-0 w-80 bg-gray-900 border border-gray-700/50 shadow-2xl rounded-lg p-4">
+                <p className="text-gray-300 mb-4">Are you sure you want to delete this receipt from "<span className="font-semibold">{extraction?.storeName || 'Unknown Store'}</span>"? This action cannot be undone.</p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setIsPopoverOpen(false)}
+                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    className="px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded-lg transition-colors font-medium cursor-pointer flex items-center gap-2"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
+                    </svg>
+                    Delete
+                  </button>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
-          {/* Delete Confirmation Dialog */}
-          <DeleteConfirmationDialog
-            isOpen={showDeleteConfirm}
-            onClose={() => setShowDeleteConfirm(false)}
-            onConfirm={handleDelete}
-            confirmText={`Are you sure you want to delete this receipt from "${extraction?.storeName || 'Unknown Store'}"? This action cannot be undone.`}
-          />
         </div>
       </div>
     </div>

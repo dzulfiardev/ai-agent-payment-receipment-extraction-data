@@ -59,6 +59,7 @@ export interface FileUploadState {
 export interface ExtractDataPayload {
   file: File;
   apiKey: string;
+  country: string;
 }
 
 export interface ExtractionSuccess {

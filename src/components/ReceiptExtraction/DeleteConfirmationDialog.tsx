@@ -35,11 +35,11 @@ export default function DeleteConfirmationDialog({
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[10000] flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <div 
+      <div
         className="bg-gray-900 rounded-2xl border border-gray-700/50 shadow-2xl max-w-md w-full mx-4"
         onClick={(e) => e.stopPropagation()}
       >

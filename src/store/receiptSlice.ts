@@ -43,26 +43,26 @@ export const extractReceiptData = createAsyncThunk(
   'receipt/extractData',
   async (payload: ExtractDataPayload, { rejectWithValue, dispatch }) => {
     try {
-      const { file, apiKey } = payload;
-      
+      const { file, apiKey, country } = payload;
+
       // Initialize the Gemini service
       geminiService.initialize(apiKey);
-      
+
       // Update progress
       dispatch(updateProgress(25));
-      
+
       // Extract data using Gemini API
-      const result = await geminiService.extractReceiptData(file);
+      const result = await geminiService.extractReceiptData(file, country);
       console.log("extract data result:", result)
-      
+
       dispatch(updateProgress(75));
-      
+
       if (!result.success || !result.data) {
         throw new Error(result.error || 'Failed to extract receipt data');
       }
-      
+
       dispatch(updateProgress(100));
-      
+
       return result.data;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -101,24 +101,24 @@ const receiptSlice = createSlice({
       state.error = null;
       state.progress = 0;
     },
-    
+
     // Clear current extraction
     clearCurrentExtraction: (state) => {
       state.currentExtraction = null;
       state.error = null;
       state.progress = 0;
     },
-    
+
     // Clear error
     clearError: (state) => {
       state.error = null;
     },
-    
+
     // Update progress
     updateProgress: (state, action: PayloadAction<number>) => {
       state.progress = action.payload;
     },
-    
+
     // Save current data to history
     saveToHistory: (state) => {
       if (state.data) {
@@ -127,20 +127,20 @@ const receiptSlice = createSlice({
         saveHistoryToStorage(newHistory);
       }
     },
-    
+
     // Clear history
     clearHistory: (state) => {
       state.history = [];
       saveHistoryToStorage([]);
     },
-    
+
     // Remove item from history
     removeFromHistory: (state, action: PayloadAction<string>) => {
       const fileNameToRemove = action.payload;
       state.history = state.history.filter(item => item.file_name !== fileNameToRemove);
       saveHistoryToStorage(state.history);
     },
-    
+
     // Load data from history
     loadFromHistory: (state, action: PayloadAction<string>) => {
       const fileName = action.payload;
@@ -165,10 +165,10 @@ const receiptSlice = createSlice({
         state.isProcessing = false;
         state.data = action.payload;
         state.currentExtraction = action.payload;
-     
+
         state.error = null;
         state.progress = 100;
-        
+
         // Auto-save to history
         const newHistory = [action.payload, ...state.history.slice(0, 9)];
         state.history = newHistory;
