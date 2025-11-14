@@ -197,3 +197,24 @@ export const detectCurrencyFromLocation = (address?: string, language?: string):
   // Default fallback
   return 'USD';
 };
+
+export const parseNumber = (value: number | string | undefined): number => {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    // Remove currency symbols, commas, and other non-numeric characters except decimal points
+    const cleanValue = value.replace(/[^\d.-]/g, '');
+    const parsed = parseFloat(cleanValue);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+};
+
+export const parseInteger = (value: number | string | undefined): number => {
+  if (typeof value === 'number') return Math.floor(value);
+  if (typeof value === 'string') {
+    const cleanValue = value.replace(/[^\d-]/g, '');
+    const parsed = parseInt(cleanValue, 10);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+};

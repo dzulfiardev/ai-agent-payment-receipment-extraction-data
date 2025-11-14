@@ -9,6 +9,7 @@ import { extractReceiptData, clearCurrentExtraction } from "@/store/receiptSlice
 import { formatCurrency as formatCurrencyHelper } from "@/common/helpers";
 import SelectAutoCompleteCustom from "@/components/ReceiptExtraction/SelectAutoCompleteCustom";
 import { countries } from "@/services/optionsData";
+import { exportToExcel, exportToCSV, exportToCSVComplete } from "@/services/exportServices"
 
 export default function ReceiptExtractionPage() {
   const dispatch = useAppDispatch();
@@ -158,22 +159,22 @@ export default function ReceiptExtractionPage() {
     <div className="min-h-screen flex flex-col bg-gray-900">
       <Header />
       <main className="flex-grow bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900">
-        <div className="py-16 sm:py-24 lg:py-32">
+        <div className="py-16 sm:py-24 lg:pb-24 lg:pt-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Page Header */}
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center px-6 py-3 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-sm font-medium mb-6 backdrop-blur-sm">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-sm font-medium mb-6 backdrop-blur-sm">
                 <span className="w-2.5 h-2.5 bg-blue-400 rounded-full mr-3 animate-pulse"></span>
                 AI Receipt Processing
               </div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6 tracking-tight">Receipt Data Extraction</h1>
+              <h1 className="text-3xl sm:text-4xl lg:text-4xl mt-2 font-bold text-white mb-3 tracking-tight">Receipt Data Extraction</h1>
               <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto">Upload your receipt and let AI extract structured data in seconds</p>
             </div>
 
             {/* Main Upload Area */}
             <div className="max-w-4xl mx-auto">
               <div className="relative z-50 bg-gray-900/50 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-2xl">
-                <div className="p-8 md:p-12">
+                <div className="p-4 md:p-7">
                   {/* Hidden File Input */}
                   <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={handleFileInputChange} className="hidden" />
 
@@ -316,12 +317,36 @@ export default function ReceiptExtractionPage() {
                   {/* Extraction Results */}
                   {currentExtraction && (
                     <div className="mt-8 bg-gray-800/50 rounded-2xl p-6 border border-gray-700/50">
-                      <h3 className="text-white text-xl font-semibold mb-6 flex items-center">
-                        <svg className="w-6 h-6 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Extraction Complete
-                      </h3>
+                      <div className="flex items-center justify-between mb-8">
+
+                        <h3 className="text-white text-xl font-semibold flex items-center">
+                          <svg className="w-6 h-6 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Extraction Complete
+                        </h3>
+
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => exportToExcel(currentExtraction)}
+                            className="px-4 py-2 cursor-pointer bg-green-600 hover:bg-green-700 cursor pointer text-white rounded-lg transition-colors font-medium flex items-center gap-2 text-sm"
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                            </svg>
+                            Download Excel
+                          </button>
+                          {/* <button
+                          onClick={() => exportToCSVComplete(currentExtraction)}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2 text-sm"
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                          </svg>
+                          CSV
+                        </button> */}
+                        </div>
+                      </div>
 
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Basic Info */}

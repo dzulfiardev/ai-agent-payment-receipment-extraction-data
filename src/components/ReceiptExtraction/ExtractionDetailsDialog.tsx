@@ -23,7 +23,7 @@ export default function ExtractionDetailsDialog({ isOpen, extraction, onClose, o
   const dispatch = useAppDispatch();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-
+  console.log('Extraction:', extraction);
   const handleDelete = () => {
     if (extraction?.fileName) {
       dispatch(removeFromHistory(extraction.fileName));

@@ -117,7 +117,7 @@ export default function ExtractionHistory({ history, itemsPerPage = 5 }: Extract
                   <div className="text-right ml-4 flex-shrink-0">
                     {/* <p className="text-white font-medium">{extraction.total ? (typeof extraction.total === "string" ? extraction.total : formatCurrency(extraction.total)) : "N/A"}</p> */}
                     <p className="text-white font-medium">{extraction.total ? formatCurrency(extraction.total, extraction.currency) : "N/A"}</p>
-                    {extraction.tax && <p className="text-gray-400 text-sm">Tax: {extraction.tax ? formatCurrency(extraction.tax, extraction.currency): "N/A"}</p>}
+                    {extraction.tax && <p className="text-gray-400 text-sm">Tax: {extraction.tax ? formatCurrency(extraction.tax, extraction.currency) : "N/A"}</p>}
                     <div className="flex items-center justify-end mt-1 text-xs text-gray-500 group-hover:text-blue-400 transition-colors">
                       <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -164,7 +164,7 @@ export default function ExtractionHistory({ history, itemsPerPage = 5 }: Extract
                 <div className="text-sm text-gray-400">
                   Showing {startIndex + 1}-{Math.min(endIndex, history.length)} of {history.length} extractions
                 </div>
-                
+
                 {/* Pagination Buttons */}
                 <div className="flex items-center gap-2">
                   {/* Previous Button */}
@@ -178,7 +178,7 @@ export default function ExtractionHistory({ history, itemsPerPage = 5 }: Extract
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
-                  
+
                   {/* Page Numbers */}
                   <div className="flex items-center gap-1">
                     {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
@@ -192,23 +192,22 @@ export default function ExtractionHistory({ history, itemsPerPage = 5 }: Extract
                       } else {
                         pageNumber = currentPage - 2 + i;
                       }
-                      
+
                       return (
                         <button
                           key={pageNumber}
                           onClick={() => handlePageClick(pageNumber)}
-                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                            currentPage === pageNumber
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${currentPage === pageNumber
                               ? 'bg-blue-500/20 border border-blue-500/50 text-blue-400'
                               : 'bg-gray-800/50 border border-gray-700/50 text-gray-400 hover:text-white hover:border-blue-500/50'
-                          }`}
+                            }`}
                         >
                           {pageNumber}
                         </button>
                       );
                     })}
                   </div>
-                  
+
                   {/* Next Button */}
                   <button
                     onClick={handleNextPage}
@@ -228,9 +227,9 @@ export default function ExtractionHistory({ history, itemsPerPage = 5 }: Extract
       </div>
 
       {/* Extraction Details Dialog */}
-      <ExtractionDetailsDialog 
-        isOpen={isDialogOpen} 
-        extraction={selectedExtraction} 
+      <ExtractionDetailsDialog
+        isOpen={isDialogOpen}
+        extraction={selectedExtraction}
         onClose={handleCloseDialog}
         onDelete={() => {
           // Reset to first page if current page becomes empty after deletion
